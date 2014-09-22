@@ -1,0 +1,196 @@
+<?php
+
+/**
+ * ProcessWire module for determining how pages are renamed when the title is changed
+ * by Adrian Jones
+ *
+ * Determine how pages are renamed when the title is changed
+ *
+ * ProcessWire 2.x
+ * Copyright (C) 2011 by Ryan Cramer
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ *
+ * http://www.processwire.com
+ * http://www.ryancramer.com
+ *
+ */
+
+class PageRenameOptions extends WireData implements Module, ConfigurableModule {
+
+    public static function getModuleInfo() {
+        return array(
+            'title' => 'Page Rename Options',
+            'summary' => 'Determine how pages are renamed when the title is changed',
+            'href' => '',
+            'version' => 5,
+            'permanent' => false,
+            'autoload' => true,
+            'permission' => 'page-rename-options',
+            'icon'     => 'pencil-square-o'
+        );
+    }
+
+
+    /**
+     * Data as used by the get/set functions
+     *
+     */
+    protected $data = array();
+
+
+   /**
+     * Default configuration for module
+     *
+     */
+    static public function getDefaultData() {
+            return array(
+                "enabled" => "",
+                "forceMatch",
+                "exemptRoles" => array(),
+                "initialDifference" => "1",
+                "liveChanges" => "1"
+            );
+    }
+
+    /**
+     * Populate the default config data
+     *
+     */
+    public function __construct() {
+       foreach(self::getDefaultData() as $key => $value) {
+               $this->$key = $value;
+       }
+    }
+
+
+    public function init() {
+        if(!$this->data['enabled'] || !$this->user->hasPermission("page-rename-options")) return;
+
+        $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
+    }
+
+    public function addScripts($event){
+        $conf = $this->getModuleInfo();
+        $version = (int) $conf['version'];
+
+        if($this->data['forceMatch'] && !$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "ForceMatch.js?v={$version}");
+        if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+        wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+        if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "liveChangesProtected.js?v={$version}");
+    }
+
+
+
+    /**
+     * Return an InputfieldsWrapper of Inputfields used to configure the class
+     *
+     * @param array $data Array of config values indexed by field name
+     * @return InputfieldsWrapper
+     *
+     */
+    public static function getModuleConfigInputfields(array $data) {
+
+        $data = array_merge(self::getDefaultData(), $data);
+
+        $wrapper = new InputFieldWrapper();
+
+        $f = wire('modules')->get("InputfieldMarkup");
+        $f->attr('name', 'warning');
+        $f->label = __('WARNING');
+        $f->value = "<br />
+        <h2>Enabling this module has the potential to break internal and external links to your site because changes to the page's name also change its URL!</h2>
+        <p>In most cases it should <b>only be enabled during the development phase</b> of your site. Even so, you should consider installing Page Path History (core module) and potentially <a href='http://modules.processwire.com/modules/page-link-abstractor/'>PageLinkAbstractor</a> to reduce the potential for broken links.</p>
+        <p>To use this module, the user's role must have the 'page-rename-options' permission checked.</p>
+        ";
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'enabled');
+        $f->label = __('Enabled');
+        $f->description = __('If enabled, whenever the title of a page is changed, the name (and therefore the url) of the page will be changed to match.');
+        $f->attr('checked', $data['enabled'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'forceMatch');
+        $f->label = __('Force Match');
+        $f->columnWidth = 50;
+        $f->showIf = "enabled=1";
+        $f->description = __('If checked, the name will always match the title and it will not be possible to manually edit the name.');
+        $f->notes = __("This will not change the names of pages that existed before this option was checked.\nUncheck to see alternate options.");
+        $f->attr('checked', $data['forceMatch'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get('InputfieldAsmSelect');
+        $f->attr('name+id', 'exemptRoles');
+        $f->label = __('Force Match Exempt Roles');
+        $f->columnWidth = 50;
+        $f->showIf = "enabled=1, forceMatch=1";
+        $f->description = __("The selected roles will not be subject to the force match rule. They will be able to manually edit the page name. Recommend only superuser role to start.");
+        $f->setAsmSelectOption('sortable', false);
+
+        // populate with all available templates
+        foreach(wire('roles') as $r) $f->addOption($r->name);
+        if(isset($data['exemptRoles'])) $f->value = $data['exemptRoles'];
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'initialDifference');
+        $f->label = __('Initial Differences Protected');
+        $f->showIf = "enabled=1, forceMatch!=1";
+        $f->columnWidth = 50;
+        $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).');
+        $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'liveChanges');
+        $f->label = __('Live Changes Protected');
+        $f->showIf = "enabled=1, forceMatch!=1";
+        $f->columnWidth = 50;
+        $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.');
+        $f->attr('checked', $data['liveChanges'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        return $wrapper;
+    }
+
+
+    /**
+     * Called only when your module is installed
+     *
+     * Create a new permission.
+     *
+     */
+    public function ___install() {
+        $permission = $this->permissions->get('page-rename-options');
+        if (!$permission->id) {
+            $p = new Permission();
+            $p->name = 'page-rename-options';
+            $p->title = $this->_('Use Page Rename Options');
+            $p->save();
+            // tell the user we created this module's permission
+            $this->message($this->_("Created New Permission: page-rename-options"));
+            $this->message($this->_("Assigned page-rename-options permission to superuser"));
+        }
+
+        $su = $this->roles->get("superuser");
+        $su->addPermission("page-rename-options");
+        $su->save();
+    }
+
+    /**
+     * Called only when your module is uninstalled
+     *
+     * Remove the special permission
+     *
+     */
+    public function ___uninstall() {
+        $permission = $this->permissions->get('page-rename-options');
+        if ($permission->id) {
+            $permission->delete();
+            $this->message($this->_("Deleted Permission: page-rename-options"));
+        }
+    }
+
+}
