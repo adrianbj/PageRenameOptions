@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 5,
+            'version' => 6,
             'permanent' => false,
             'autoload' => true,
             'permission' => 'page-rename-options',
@@ -45,10 +45,10 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     static public function getDefaultData() {
             return array(
                 "enabled" => "",
-                "forceMatch",
+                "forceMatch" => "",
                 "exemptRoles" => array(),
-                "initialDifference" => "1",
-                "liveChanges" => "1"
+                "initialDifference" => "",
+                "liveChanges" => ""
             );
     }
 
@@ -76,7 +76,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         if($this->data['forceMatch'] && !$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "ForceMatch.js?v={$version}");
         if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
         wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
-        if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "liveChangesProtected.js?v={$version}");
+        if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
     }
 
 
