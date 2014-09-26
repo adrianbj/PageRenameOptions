@@ -13,25 +13,25 @@ Please test the behavior of each setting thoroughly so you understand what each 
 Please let me know if you have any further requirements around permissions / role access to the module's functionality.
 
 
-###CONFIG SETTINGS
+##CONFIG SETTINGS
 
-#Force Match
+###Force Match
 
 * If checked, the name will always match the title and it will not be possible to manually edit the name.
 * If checked, this will override the settings below, except for roles that are set exempt from this rule.
 
 
-#Force Match Exempt Roles
+###Force Match Exempt Roles
 
 * The selected roles will not be subject to the force match rule. They will be able to manually edit the page name, based on the selected options below.
 
 
-#Initial Differences Protected
+###Initial Differences Protected
 
 * If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).
 
 
-#Live Changes Protected
+###Live Changes Protected
 
 If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.
 
