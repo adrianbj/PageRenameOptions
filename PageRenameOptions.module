@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 9,
+            'version' => 10,
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -94,8 +94,20 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f = wire('modules')->get("InputfieldMarkup");
         $f->attr('name', 'warning');
         $f->label = __('WARNING');
-        $f->value = "<h3>This module may break links to your site because changes to the page's name also change its URL!</h3>
-        <h3>You REALLY should install Page Path History (core module) and potentially <a href='http://modules.processwire.com/modules/page-link-abstractor/'>Page Link Abstractor</a> to prevent possible broken links.</h3>";
+        $f->value = "<h3>This module may break links to your site because changes to the page's name also change its URL!</h3>";
+        if(wire('modules')->isInstalled("PagePathHistory")){
+            $f->value .= "<h3 style='color:#009900'>Page Path History is installed, so you are protected from any future URL changes.</h3>";
+        }
+        else{
+            $f->value .= "<h3 style='color:#FF6600'>You should install Page Path History (core module) to ensure any changed URLs are automatically redirected.</h3>";
+        }
+        if(wire('modules')->isInstalled("PageLinkAbstractor")){
+            $f->value .= "<h3 style='color:#009900'>Page Link Abstractor is installed, so links embedded in Textarea fields will be updated automatically.</h3>";
+        }
+        else{
+            $f->value .= "<h3 style='color:#FF6600'>You might consider installing <a href='http://modules.processwire.com/modules/page-link-abstractor/'>Page Link Abstractor</a> to ensure any links embedded in Textarea fields are automatically updated if the page name/url changes.</h3>";
+        }
+
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
