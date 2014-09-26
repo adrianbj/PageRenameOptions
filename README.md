@@ -12,14 +12,8 @@ In most cases it should only be enabled during the development phase of your sit
 To use this module, the user's role must have the 'page-auto-rename' permission checked.
 
 
-###Access permission
-
-This module requires a new permission: "page-rename-options". This permission is created automatically on install and is added to the superuser role, but it is up to the developer to add the permission to other roles as required.
-
-
 ###Config Settings
 
-* Checkbox to enable/disable the module
 * Checkbox for Force Match setting which prevents any manual changes to the page name
 * Selection of roles that are exempt from the Force Match option
 * Checkbox to protect existing changes to the page name
