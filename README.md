@@ -6,16 +6,34 @@ Processwire module determining how pages are renamed when the title is changed
 ##WARNING
 
 This module may break links to your site because changes to the page's name also change its URL!
-
 You REALLY should install Page Path History (core module) and potentially Page Link Abstractor to prevent possible broken links.
 
+Please test the behavior of each setting thoroughly so you understand what each one does! Personally I like Force Match with superuser as the exempt rule so that I can manually tweak a page name if I need.
 
-###Config Settings
+Please let me know if you have any further requirements around permissions / role access to the module's functionality.
 
-* Checkbox for Force Match setting which prevents any manual changes to the page name
-* Selection of roles that are exempt from the Force Match option
-* Checkbox to protect existing changes to the page name
-* Checkbox to protect manual live changes to the page name
+
+###CONFIG SETTINGS
+
+#Force Match
+
+* If checked, the name will always match the title and it will not be possible to manually edit the name.
+* If checked, this will override the settings below, except for roles that are set exempt from this rule.
+
+
+#Force Match Exempt Roles
+
+* The selected roles will not be subject to the force match rule. They will be able to manually edit the page name, based on the selected options below.
+
+
+#Initial Differences Protected
+
+* If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).
+
+
+#Live Changes Protected
+
+If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.
 
 
 ## License
