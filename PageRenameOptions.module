@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 10,
+            'version' => 11,
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -69,11 +69,17 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $conf = $this->getModuleInfo();
         $version = (int) $conf['version'];
 
-        //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
-        if($this->process == "ProcessPageEdit" && $this->data['forceMatch'] && !$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "ForceMatch.js?v={$version}");
-        if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+            //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
+            if($this->process == "ProcessPageEdit" && $this->data['forceMatch']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "ForceMatch.js?v={$version}");
+            if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+        }
+
         wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
-        if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
+
+        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+            if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
+        }
     }
 
 
@@ -110,30 +116,30 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
-        $f->attr('name', 'forceMatch');
-        $f->label = __('Force Match');
-        $f->columnWidth = 50;
-        $f->description = __('If checked, the name will always match the title and it will not be possible to manually edit the name.');
-        $f->notes = __("If checked, this will override the settings below, except for roles that are set exempt from this rule.");
-        $f->attr('checked', $data['forceMatch'] ? 'checked' : '' );
-        $wrapper->add($f);
-
         $f = wire('modules')->get('InputfieldAsmSelect');
         $f->attr('name+id', 'exemptRoles');
-        $f->label = __('Force Match Exempt Roles');
-        $f->columnWidth = 50;
-        $f->description = __("The selected roles will not be subject to the force match rule. They will be able to manually edit the page name, based on the selected options below.");
+        $f->label = __('Exempt Roles');
+        $f->description = __("The selected roles will not be subject to any of the rules below.\nThe name will change automatically with the title, but they will be able to manually edit the page name as desired.");
         $f->setAsmSelectOption('sortable', false);
-
         // populate with all available templates
         foreach(wire('roles') as $r) $f->addOption($r->name);
         if(isset($data['exemptRoles'])) $f->value = $data['exemptRoles'];
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'forceMatch');
+        $f->label = __('Force Match');
+        $f->columnWidth = 33;
+        $f->description = __('If checked, the name will always match the title and it will not be possible to manually edit the name.');
+        $f->notes = __("If checked, this will override the other two settings.");
+        $f->attr('checked', $data['forceMatch'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'initialDifference');
         $f->label = __('Initial Differences Protected');
+        $f->showIf = "forceMatch!=1";
+        $f->columnWidth = 34;
         $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).');
         $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
         $wrapper->add($f);
@@ -141,6 +147,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'liveChanges');
         $f->label = __('Live Changes Protected');
+        $f->showIf = "forceMatch!=1";
+        $f->columnWidth = 33;
         $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.');
         $f->attr('checked', $data['liveChanges'] ? 'checked' : '' );
         $wrapper->add($f);

@@ -15,15 +15,15 @@ Please let me know if you have any further requirements around permissions / rol
 
 ##CONFIG SETTINGS
 
+###Exempt Roles
+
+* The selected roles will not be subject to any of the rules below.
+* The name will change automatically with the title, but they will be able to manually edit the page name as desired.
+
 ###Force Match
 
 * If checked, the name will always match the title and it will not be possible to manually edit the name.
-* If checked, this will override the settings below, except for roles that are set exempt from this rule.
-
-
-###Force Match Exempt Roles
-
-* The selected roles will not be subject to the force match rule. They will be able to manually edit the page name, based on the selected options below.
+* If checked, this will override the other two settings.
 
 
 ###Initial Differences Protected
