@@ -5,11 +5,9 @@ Processwire module determining how pages are renamed when the title is changed
 
 ##WARNING
 
-Enabling this module has the potential to break internal and external links to your site because changes to the page's name also change its URL!
+This module may break links to your site because changes to the page's name also change its URL!
 
-In most cases it should only be enabled during the development phase of your site. Even so, you should consider installing Page Path History (core module) and potentially PageLinkAbstractor to reduce the potential for broken links.
-
-To use this module, the user's role must have the 'page-auto-rename' permission checked.
+You REALLY should install Page Path History (core module) and potentially Page Link Abstractor to prevent possible broken links.
 
 
 ###Config Settings
