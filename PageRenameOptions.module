@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 8,
+            'version' => 9,
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -103,7 +103,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->label = __('Force Match');
         $f->columnWidth = 50;
         $f->description = __('If checked, the name will always match the title and it will not be possible to manually edit the name.');
-        $f->notes = __("This will not change the names of pages that existed before this option was checked.\nIf checked, this will override the settings below, except for roles that are set exempt from this rule.");
+        $f->notes = __("If checked, this will override the settings below, except for roles that are set exempt from this rule.");
         $f->attr('checked', $data['forceMatch'] ? 'checked' : '' );
         $wrapper->add($f);
 
