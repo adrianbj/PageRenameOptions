@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 11,
+            'version' => 12,
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -105,7 +105,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             $f->value .= "<h3 style='color:#009900'>Page Path History is installed, so you are protected from any future URL changes.</h3>";
         }
         else{
-            $f->value .= "<h3 style='color:#FF6600'>You should install Page Path History (core module) to ensure any changed URLs are automatically redirected.</h3>";
+            $f->value .= "<h3 style='color:#FF6600'>You should install <a href='".wire('config')->urls->admin."module/installConfirm?name=PagePathHistory'>Page Path History</a> (core module) to ensure any changed URLs are automatically redirected.</h3>";
         }
         if(wire('modules')->isInstalled("PageLinkAbstractor")){
             $f->value .= "<h3 style='color:#009900'>Page Link Abstractor is installed, so links embedded in Textarea fields will be updated automatically.</h3>";
