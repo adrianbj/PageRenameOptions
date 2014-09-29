@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 12,
+            'version' => 13,
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -43,9 +43,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
      */
     static public function getDefaultData() {
             return array(
-                "forceMatch" => "",
                 "exemptRoles" => array(),
                 "initialDifference" => "",
+                "preventManualChanges" => "",
                 "liveChanges" => ""
             );
     }
@@ -71,7 +71,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
             //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
-            if($this->process == "ProcessPageEdit" && $this->data['forceMatch']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "ForceMatch.js?v={$version}");
+            if($this->process == "ProcessPageEdit" && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
             if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
         }
 
@@ -113,6 +113,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         else{
             $f->value .= "<h3 style='color:#FF6600'>You might consider installing <a href='http://modules.processwire.com/modules/page-link-abstractor/'>Page Link Abstractor</a> to ensure any links embedded in Textarea fields are automatically updated if the page name/url changes.</h3>";
         }
+        $f->value .= "<br /><p><strong>Introduction</strong></p><p>With none of the settings below checked, the default behavior is to have the page name always match changes to the page title, but allow the user to manually edit if they want. The options allow you to protect initial differences (changes you may have made as a user with an exempt role), completely disable manual changes, or protect manual name changes from subsequent changes to the title while editing.</p>
+        <p>My preferred settings are to set the exempt role as superuser, and check \"Initial Differences Protected\" and \"Prevent Manual Changes\".</p>";
 
         $wrapper->add($f);
 
@@ -127,27 +129,26 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
-        $f->attr('name', 'forceMatch');
-        $f->label = __('Force Match');
-        $f->columnWidth = 33;
-        $f->description = __('If checked, the name will always match the title and it will not be possible to manually edit the name.');
-        $f->notes = __("If checked, this will override the other two settings.");
-        $f->attr('checked', $data['forceMatch'] ? 'checked' : '' );
-        $wrapper->add($f);
-
-        $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'initialDifference');
         $f->label = __('Initial Differences Protected');
-        $f->showIf = "forceMatch!=1";
-        $f->columnWidth = 34;
+        $f->columnWidth = 33;
         $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).');
         $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'preventManualChanges');
+        $f->label = __('Prevent Manual Changes');
+        $f->columnWidth = 34;
+        $f->description = __('If checked, it won\'t be possible to manually edit the name.');
+        $f->notes = __('If checked, this will disable the "Live Changes Protected" setting since it won\'t be possible to make any manual changes.');
+        $f->attr('checked', $data['preventManualChanges'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'liveChanges');
         $f->label = __('Live Changes Protected');
-        $f->showIf = "forceMatch!=1";
+        $f->showIf = "preventManualChanges!=1";
         $f->columnWidth = 33;
         $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.');
         $f->attr('checked', $data['liveChanges'] ? 'checked' : '' );

@@ -8,7 +8,13 @@ Processwire module determining how pages are renamed when the title is changed
 This module may break links to your site because changes to the page's name also change its URL!
 You REALLY should install Page Path History (core module) and potentially Page Link Abstractor to prevent possible broken links.
 
-Please test the behavior of each setting thoroughly so you understand what each one does! Personally I like Force Match with superuser as the exempt rule so that I can manually tweak a page name if I need.
+##Introduction
+
+With none of the settings below checked, the default behavior is to have the page name always match changes to the page title, but allow the user to manually edit if they want. The options allow you to protect initial differences (changes you may have made as a user with an exempt role), completely disable manual changes, or protect manual name changes from subsequent changes to the title while editing.
+
+My preferred settings are to set the exempt role as superuser, and check "Initial Differences Protected" and "Prevent Manual Changes".
+
+Please test the behavior of each setting thoroughly so you understand what each one does!
 
 Please let me know if you have any further requirements around permissions / role access to the module's functionality.
 
@@ -20,20 +26,18 @@ Please let me know if you have any further requirements around permissions / rol
 * The selected roles will not be subject to any of the rules below.
 * The name will change automatically with the title, but they will be able to manually edit the page name as desired.
 
-###Force Match
-
-* If checked, the name will always match the title and it will not be possible to manually edit the name.
-* If checked, this will override the other two settings.
-
-
 ###Initial Differences Protected
 
 * If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).
 
+###Prevent Manual Changes
+
+* If checked, it won't be possible to manually edit the name.
+* If checked, this will disable the "Live Changes Protected" setting since it won't be possible to make any manual changes.
 
 ###Live Changes Protected
 
-If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.
+* If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.
 
 
 ## License
