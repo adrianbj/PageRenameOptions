@@ -22,9 +22,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => '',
-            'version' => 13,
+            'version' => 14,
             'permanent' => false,
-            'autoload' => true,
+            'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
         );
     }
@@ -66,6 +66,10 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     }
 
     public function addScripts($event){
+
+        $p = $event->object->getPage();
+        if($p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
+
         $conf = $this->getModuleInfo();
         $version = (int) $conf['version'];
 
