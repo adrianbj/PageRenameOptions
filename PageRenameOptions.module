@@ -21,8 +21,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         return array(
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
-            'href' => '',
-            'version' => 14,
+            'href' => 'http://modules.processwire.com/modules/page-rename-options/',
+            'version' => 15,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
