@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 17,
+            'version' => 18,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -63,15 +63,18 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
     public function init() {
         $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
+        $this->addHookAfter("ProcessPageAdd::buildForm", $this, "addScripts");
     }
 
     public function addScripts($event){
 
         $p = $event->object->getPage();
-        if($p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
+
+        // $p check is because it is not available for ProcessPageAdd
+        if($p && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
 
         // if settings tab is disabled and name is not in content tab, then we need to rename on save
-        if($p->template->noSettings && !$p->template->nameContentTab) {
+        if($p && $p->template->noSettings && !$p->template->nameContentTab) {
             if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
                 // if initial difference protected enabled, exit if initial name and name-ified title are different
                 if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
@@ -84,8 +87,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             $version = (int) $conf['version'];
 
             if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-                //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
-                if($this->process == "ProcessPageEdit" && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
+                //ProcessPageEdit/Add check is to prevent disabling of name field when editing a user etc
+                if(($this->process == "ProcessPageEdit" || $this->process == "ProcessPageAdd") && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
                 if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
             }
 
