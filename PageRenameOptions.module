@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 15,
+            'version' => 16,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -70,20 +70,51 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $p = $event->object->getPage();
         if($p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
 
-        $conf = $this->getModuleInfo();
-        $version = (int) $conf['version'];
+        // if settings tab is disabled and name is not in content tab, then we need to rename on save
+        if($p->template->noSettings && !$p->template->nameContentTab) {
+            // if initial difference protected enabled, exit if initial name and name-ified title are different
+            if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
+            $this->addHookAfter('Pages::saveReady', $this, 'renameOnSave');
+        }
+        // javascript control of name in real time because name field is available
+        else {
+            $conf = $this->getModuleInfo();
+            $version = (int) $conf['version'];
 
-        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-            //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
-            if($this->process == "ProcessPageEdit" && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
-            if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+            if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+                //ProcessPageEdit check is to prevent disabling of name field when editing a user etc
+                if($this->process == "ProcessPageEdit" && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
+                if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+            }
+
+            wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+
+            if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+                if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
+            }
+        }
+    }
+
+
+    public function renameOnSave(HookEvent $event) {
+
+        $p = $event->arguments[0];
+
+        $n = 0;
+        $newName = $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate);
+        $existingPages = $p->parent->children("name=$newName, include=all");
+        $existingPageIds = array();
+        foreach($existingPages as $existingPage) $existingPageIds[] = $existingPage->id;
+        if(!in_array($p->id, $existingPageIds)) { // this prevents "-1" being appended when saving page with same title as before
+            do {
+                $name = $newName . ($n ? "-$n" : '');
+                $child = $p->parent->child("name=$name, include=all"); // see if another page already has the same name
+                $n++;
+            } while($child->id);
+            $p->name = $name;
         }
 
-        wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
-
-        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-            if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
-        }
+        $event->return = $p;
     }
 
 
@@ -136,7 +167,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('name', 'initialDifference');
         $f->label = __('Initial Differences Protected');
         $f->columnWidth = 33;
-        $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name is already different from the title (evaluated on page edit initial load).');
+        $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name was already different from the title (evaluated on page edit initial load).');
         $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
         $wrapper->add($f);
 
