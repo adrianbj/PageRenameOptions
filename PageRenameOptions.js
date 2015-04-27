@@ -20,9 +20,9 @@ $(document).ready(function() {
     pageAutoRename_active = true;
 
     $(".InputfieldPageName .LanguageSupport input[type=text]").each(function() {
-        // if language support enabled and any of the page names contains something
-        // then prevent title from populating name fields
-        if($(this).val().length > 0) pageAutoRename_active = false;
+        // even if language support enabled and any of the page names contains something
+        // then we still want to rename if other settings allow
+        if($(this).val().length > 0) pageAutoRename_active = true;
     });
 
     var pageAutoRename_titleKeyup = function() {
