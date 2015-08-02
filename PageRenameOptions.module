@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 21,
+            'version' => 22,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -62,6 +62,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
 
     public function init() {
+        //escape if not PageEdit or PageAdd
+        if(wire('page')->process != 'ProcessPageEdit' && wire('page')->process != 'ProcessPageAdd') return;
+
         $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
         $this->addHookAfter("ProcessPageAdd::buildForm", $this, "addScripts");
     }
