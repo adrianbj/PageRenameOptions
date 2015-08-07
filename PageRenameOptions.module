@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 22,
+            'version' => 23,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -73,11 +73,11 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $p = $event->object->getPage();
 
-        // $p check is because it is not available for ProcessPageAdd
-        if($p && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
+        // $p->id check is because it is not available for ProcessPageAdd
+        if($p->id && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
 
         // if settings tab is disabled and name is not in content tab, then we need to rename on save
-        if($p && $p->template->noSettings && !$p->template->nameContentTab) {
+        if($p->id && $p->template->noSettings && !$p->template->nameContentTab) {
             if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
                 // if initial difference protected enabled, exit if initial name and name-ified title are different
                 if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
