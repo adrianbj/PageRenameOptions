@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 23,
+            'version' => 24,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -44,6 +44,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     static public function getDefaultData() {
             return array(
                 "exemptRoles" => array(),
+                "exemptPages" => array(),
                 "initialDifference" => "",
                 "preventManualChanges" => "",
                 "liveChanges" => ""
@@ -72,6 +73,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     public function addScripts($event){
 
         $p = $event->object->getPage();
+
+        //escape if page is exempt
+        if(count($this->data['exemptPages']) !== 0 && in_array($p->id, $this->data['exemptPages'])) return;
 
         // $p->id check is because it is not available for ProcessPageAdd
         if($p->id && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
@@ -158,11 +162,20 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f = wire('modules')->get('InputfieldAsmSelect');
         $f->attr('name+id', 'exemptRoles');
         $f->label = __('Exempt Roles');
+        $f->columnWidth = 50;
         $f->description = __("The selected roles will not be subject to any of the rules below.\nThe name will change automatically with the title, but they will be able to manually edit the page name as desired.");
         $f->setAsmSelectOption('sortable', false);
         // populate with all available templates
         foreach(wire('roles') as $r) $f->addOption($r->name);
         if(isset($data['exemptRoles'])) $f->value = $data['exemptRoles'];
+        $wrapper->add($f);
+
+        $f = wire('modules')->get('InputfieldPageListSelectMultiple');
+        $f->attr('name+id', 'exemptPages');
+        $f->label = __('Exempt Pages');
+        $f->columnWidth = 50;
+        $f->description = __("Pages that are exempt from the rules below. Changing the titles of selected pages will behave as though this module is not installed. For multi-language sites it is recommended to select the site's homepage.");
+        if(isset($data['exemptPages'])) $f->value = $data['exemptPages'];
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
