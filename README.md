@@ -6,7 +6,7 @@ Processwire module determining how pages are renamed when the title is changed
 ##WARNING
 
 This module may break links to your site because changes to the page's name also change its URL!
-You REALLY should install Page Path History (core module) and potentially Page Link Abstractor to prevent possible broken links.
+You REALLY should install Page Path History (core module) to prevent possible broken links.
 
 ##Introduction
 
