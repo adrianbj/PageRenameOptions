@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 24,
+            'version' => 25,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -172,9 +172,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $f = wire('modules')->get('InputfieldPageListSelectMultiple');
         $f->attr('name+id', 'exemptPages');
-        $f->label = __('Exempt Pages');
+        $f->label = __('Excluded Pages');
         $f->columnWidth = 50;
-        $f->description = __("Pages that are exempt from the rules below. Changing the titles of selected pages will behave as though this module is not installed. For multi-language sites it is recommended to select the site's homepage.");
+        $f->description = __("Pages that are excluded from the actions of this module. Changing the titles of selected pages will behave as though this module is not installed. For multi-language sites it is recommended to select the site's homepage.");
         if(isset($data['exemptPages'])) $f->value = $data['exemptPages'];
         $wrapper->add($f);
 
