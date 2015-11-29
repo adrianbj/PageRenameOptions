@@ -22,7 +22,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'title' => 'Page Rename Options',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 25,
+            'version' => 26,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -142,7 +142,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $data = array_merge(self::getDefaultData(), $data);
 
-        $wrapper = new InputFieldWrapper();
+        $wrapper = new InputfieldWrapper();
 
         $f = wire('modules')->get("InputfieldMarkup");
         $f->attr('name', 'warning');
