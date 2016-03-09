@@ -20,9 +20,10 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     public static function getModuleInfo() {
         return array(
             'title' => 'Page Rename Options',
+            'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 28,
+            'version' => 29,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -43,6 +44,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
      */
     static public function getDefaultData() {
             return array(
+                "renameMatchTitle" => 1,
                 "exemptRoles" => array(),
                 "exemptPages" => array(),
                 "exemptTemplates" => array(),
@@ -103,7 +105,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
                 if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
             }
 
-            wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+            if($this->data['renameMatchTitle']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
 
             if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
                 if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
@@ -158,9 +160,16 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         else{
             $f->value .= "<h3 style='color:#FF6600'>You should install <a href='".wire('config')->urls->admin."module/installConfirm?name=PagePathHistory'>Page Path History</a> (core module) to ensure any changed URLs are automatically redirected.</h3>";
         }
-        $f->value .= "<br /><p><strong>Introduction</strong></p><p>With none of the settings below checked, the default behavior is to have the page name always match changes to the page title, but allow the user to manually edit if they want. The options allow you to protect initial differences (changes you may have made as a user with an exempt role), completely disable manual changes, or protect manual name changes from subsequent changes to the title while editing.</p>
-        <p>My preferred settings are to set the exempt role as superuser, and check \"Initial Differences Protected\" and \"Prevent Manual Changes\".</p>";
+        $f->value .= "<br /><p><strong>Introduction</strong></p><p>With the 'Automatically rename the name field to match the title' option checked, the default behavior is to have the page name always match changes to the page title, but allow the user to manually edit if they want. The options allow you to protect initial differences (changes you may have made as a user with an exempt role), completely disable manual changes, or protect manual name changes from subsequent changes to the title while editing.</p>
+        <p>My preferred settings are to set the exempt role as superuser, and check \"Initial Differences Protected\" and \"Prevent Manual Changes\". You may also want to consider unchecking 'Automatically rename the name field to match the title' once your site is live, and checking the 'Prevent Manual Changes' option, with an exception for the superuser role. This ensures links can't be changed by editors.</p>";
 
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'renameMatchTitle');
+        $f->label = __('Automatically rename the name field to match the title.');
+        $f->description = __('If checked, any changes to the title will result in the name being changed to match.');
+        $f->attr('checked', $data['renameMatchTitle'] ? 'checked' : '' );
         $wrapper->add($f);
 
         $f = wire('modules')->get('InputfieldAsmSelect');
@@ -185,7 +194,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f = wire('modules')->get('InputfieldAsmSelect');
         $f->attr('name+id', 'exemptRoles');
         $f->label = __('Roles exempt from rules below');
-        $f->description = __("The selected roles will not be subject to any of the rules below.\nThe name will change automatically with the title, but they will be able to manually edit the page name as desired.");
+        $f->description = __("The selected roles will not be subject to any of the rules below.\nThe name will change automatically with the title (unless the 'Automatically rename the name field to match the title' is unchecked.), but they will be able to manually edit the page name as desired.");
         $f->setAsmSelectOption('sortable', false);
         // populate with all available templates
         foreach(wire('roles') as $r) $f->addOption($r->name);
