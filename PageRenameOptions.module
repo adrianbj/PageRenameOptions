@@ -23,7 +23,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 29,
+            'version' => 30,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -45,6 +45,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     static public function getDefaultData() {
             return array(
                 "renameMatchTitle" => 1,
+                "renameUnpublishedOnly" => null,
                 "exemptRoles" => array(),
                 "exemptPages" => array(),
                 "exemptTemplates" => array(),
@@ -105,7 +106,10 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
                 if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
             }
 
-            if($this->data['renameMatchTitle']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+            if($this->data['renameMatchTitle']) {
+                if(!$p->is(Page::statusUnpublished) && $this->data['renameUnpublishedOnly'] == 1) return;
+                wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+            }
 
             if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
                 if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
@@ -167,9 +171,19 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'renameMatchTitle');
-        $f->label = __('Automatically rename the name field to match the title.');
+        $f->label = __('Automatically rename the name field to match the title');
         $f->description = __('If checked, any changes to the title will result in the name being changed to match.');
+        $f->columnWidth = 50;
         $f->attr('checked', $data['renameMatchTitle'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'renameUnpublishedOnly');
+        $f->label = __('Only rename unpublished pages');
+        $f->description = __('If checked, the name field will only be renamed to match the title when the page is unpublished.');
+        $f->showIf = "renameMatchTitle=1";
+        $f->columnWidth = 50;
+        $f->attr('checked', $data['renameUnpublishedOnly'] ? 'checked' : '' );
         $wrapper->add($f);
 
         $f = wire('modules')->get('InputfieldAsmSelect');

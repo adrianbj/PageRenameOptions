@@ -21,6 +21,12 @@ Please let me know if you have any further requirements around permissions / rol
 
 ## CONFIG SETTINGS
 
+### Automatically rename the name field to match the title
+* This is probably the reason you installed this module. You might potentially want to uncheck this when your site is live. You could also uncheck this in conjunction with the "Prevent Manual Changes" option to prevent users from editing the page name. There is now an optional "page-rename" permission in ProcessWire, but the combinations here are still potentially more configurable.
+
+### Only rename unpublished pages
+* This is a great option if you want to make names match titles until the point that the page is published. After this, changes will not be automatically made.
+
 ### Exempt Roles
 
 * The selected roles will not be subject to any of the rules below.
@@ -28,6 +34,9 @@ Please let me know if you have any further requirements around permissions / rol
 
 ### Excluded Pages
 * Pages that are excluded from the actions of this module. Changing the titles of selected pages will behave as though this module is not installed. For multi-language sites it is recommended to select the site's homepage.
+
+### Excluded Templates
+* Templates of pages that are excluded from the actions of this module. Changing the titles of matched pages will behave as though this module is not installed.
 
 ### Initial Differences Protected
 
