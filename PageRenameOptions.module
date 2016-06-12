@@ -23,7 +23,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 30,
+            'version' => 31,
             'permanent' => false,
             'autoload' => 'template=admin',
             'icon'     => 'pencil-square-o'
@@ -47,6 +47,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
                 "renameMatchTitle" => 1,
                 "renameUnpublishedOnly" => null,
                 "exemptRoles" => array(),
+                "includeExclude" => 'exclude',
                 "exemptPages" => array(),
                 "exemptTemplates" => array(),
                 "initialDifference" => "",
@@ -78,11 +79,27 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         $p = $event->object->getPage();
 
-        //escape if page is exempt
-        if(count($this->data['exemptPages']) !== 0 && in_array($p->id, $this->data['exemptPages'])) return;
+        //escape if homepage
+        if($p->id == 1) return;
 
-        //escape if template is exempt
-        if(count($this->data['exemptTemplates']) !== 0 && in_array($p->template->id, $this->data['exemptTemplates'])) return;
+        // rename historically named exempt to the more meaningful specified
+        $specifiedPages = $this->data['exemptPages'];
+        $specifiedTemplates = $this->data['exemptTemplates'];
+
+        if($this->data['includeExclude'] == 'include') {
+            //escape if page is not specified
+            if(count($specifiedPages) !== 0 && !in_array($p->id, $specifiedPages)) return;
+
+            //escape if template is specified
+            if(count($specifiedTemplates) !== 0 && !in_array($p->template->id, $specifiedTemplates)) return;
+        }
+        else {
+            //escape if page is specified
+            if(count($specifiedPages) !== 0 && in_array($p->id, $specifiedPages)) return;
+
+            //escape if template is not specified
+            if(count($specifiedTemplates) !== 0 && in_array($p->template->id, $specifiedTemplates)) return;
+        }
 
         // $p->id check is because it is not available for ProcessPageAdd
         if($p->id && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
@@ -186,11 +203,21 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['renameUnpublishedOnly'] ? 'checked' : '' );
         $wrapper->add($f);
 
+        $f = wire('modules')->get('InputfieldRadios');
+        $f->attr('name+id', 'includeExclude');
+        $f->label = __('Exclude or Include Specified Templates');
+        $f->columnWidth = 33;
+        $f->description = __("This setting determines how the Specified Templates or Specified Pages are handled. If nothing is specified in either of those settings, rules will be applied to all templates / pages.");
+        $f->addOption('exclude', 'Exclude');
+        $f->addOption('include', 'Include');
+        if(isset($data['includeExclude'])) $f->value = $data['includeExclude'];
+        $wrapper->add($f);
+
         $f = wire('modules')->get('InputfieldAsmSelect');
-        $f->attr('name+id', 'exemptTemplates');
-        $f->label = __('Excluded Templates');
-        $f->columnWidth = 50;
-        $f->description = __("Selected templates are excluded from the actions of this module. Changing the titles of pages with any of the selected templates will behave as though this module is not installed.");
+        $f->attr('name+id', 'exemptTemplates'); //exempt is historical name kept for backward compatibility
+        $f->label = __('Specified Templates');
+        $f->columnWidth = 34;
+        $f->description = __("Selected templates are excluded or included from the actions of this module.");
         $f->setAsmSelectOption('sortable', false);
         // populate with all available templates
         foreach(wire('templates') as $t) $f->addOption($t->id,$t->name);
@@ -198,10 +225,10 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $wrapper->add($f);
 
         $f = wire('modules')->get('InputfieldPageListSelectMultiple');
-        $f->attr('name+id', 'exemptPages');
-        $f->label = __('Excluded Pages');
-        $f->columnWidth = 50;
-        $f->description = __("Pages that are excluded from the actions of this module. Changing the titles of selected pages will behave as though this module is not installed. For multi-language sites it is recommended to select the site's homepage.");
+        $f->attr('name+id', 'exemptPages'); //exempt is historical name kept for backward compatibility
+        $f->label = __('Specified Pages');
+        $f->columnWidth = 33;
+        $f->description = __("Pages that are excluded or included from the actions of this module.");
         if(isset($data['exemptPages'])) $f->value = $data['exemptPages'];
         $wrapper->add($f);
 
