@@ -23,9 +23,9 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 32,
+            'version' => 33,
             'permanent' => false,
-            'autoload' => 'template=admin',
+            'autoload' => true,
             'icon'     => 'pencil-square-o'
         );
     }
@@ -44,6 +44,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
      */
     static public function getDefaultData() {
             return array(
+                "enableForApi" => null,
                 "renameMatchTitle" => 1,
                 "renameUnpublishedOnly" => null,
                 "exemptRoles" => array(),
@@ -51,6 +52,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
                 "exemptPages" => array(),
                 "exemptTemplates" => array(),
                 "initialDifference" => "",
+                "renameWithoutTitleChange" => "",
                 "preventManualChanges" => "",
                 "liveChanges" => ""
             );
@@ -68,53 +70,37 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
 
     public function init() {
-        //escape if not PageEdit or PageAdd
-        if(wire('page')->process != 'ProcessPageEdit' && wire('page')->process != 'ProcessPageAdd') return;
-
-        $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
-        $this->addHookAfter("ProcessPageAdd::buildForm", $this, "addScripts");
     }
 
-    public function addScripts($event){
+    public function ready() {
+
+        // if not in admin (ie frontend call via API) and enableForApi is not checked, exit now
+        if(strpos($this->input->url, $this->config->urls->admin) !== 0 && !$this->data['enableForApi']) {
+            return;
+        }
+        // in admin/backend
+        elseif(strpos($this->input->url, $this->config->urls->admin) === 0) {
+            // escape if not PageEdit or PageAdd
+            if(wire('page')->process != 'ProcessPageEdit' && wire('page')->process != 'ProcessPageAdd') return;
+            // add hooks
+            $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
+            $this->addHookAfter("ProcessPageAdd::buildForm", $this, "addScripts");
+        }
+        // in frontend/api call
+        else {
+            $this->addHookBefore('Pages::saveReady', $this, 'renameOnSave');
+        }
+    }
+
+    protected function addScripts($event){
 
         $p = $event->object->getPage();
 
-        //escape if homepage
-        if($p->id == 1) return;
-
-        // rename historically named exempt to the more meaningful specified
-        $specifiedPages = $this->data['exemptPages'];
-        $specifiedTemplates = $this->data['exemptTemplates'];
-
-        // only run these checks if page has a template already. This also covers it having a valid ID (ie not 0)
-        // this prevents this working when adding a new page, but works fine for editing/renaming an existing page
-        if($p->template) {
-            if($this->data['includeExclude'] == 'include') {
-                //escape if page is not specified
-                if(count($specifiedPages) !== 0 && !in_array($p->id, $specifiedPages)) return;
-
-                //escape if template is specified
-                if(count($specifiedTemplates) !== 0 && !in_array($p->template->id, $specifiedTemplates)) return;
-            }
-            else {
-                //escape if page is specified
-                if(count($specifiedPages) !== 0 && in_array($p->id, $specifiedPages)) return;
-
-                //escape if template is not specified
-                if(count($specifiedTemplates) !== 0 && in_array($p->template->id, $specifiedTemplates)) return;
-            }
-        }
-
-        // $p->id check is because it is not available for ProcessPageAdd
-        if($p->id && $p->template->flags & Template::flagSystem) return; // exclude system templates eg. users etc
+        if(!$this->checkPageTemplateRestrictions($p)) return;
 
         // if settings tab is disabled and name is not in content tab, then we need to rename on save
         if($p->id && $p->template->noSettings && !$p->template->nameContentTab) {
-            if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-                // if initial difference protected enabled, exit if initial name and name-ified title are different
-                if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
-            }
-            $this->addHookAfter('Pages::saveReady', $this, 'renameOnSave');
+            $this->addHookBefore('Pages::saveReady', $this, 'renameOnSave');
         }
         // javascript control of name in real time because name field is available
         else {
@@ -125,6 +111,11 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
                 //ProcessPageEdit/Add check is to prevent disabling of name field when editing a user etc
                 if(($this->process == "ProcessPageEdit" || $this->process == "ProcessPageAdd") && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
                 if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+            }
+
+            if($this->data['renameWithoutTitleChange']) {
+                if(!$p->is(Page::statusUnpublished) && $this->data['renameUnpublishedOnly'] == 1) return;
+                wire("config")->scripts->add($this->config->urls->PageRenameOptions . "RenameWithoutTitleChange.js?v={$version}");
             }
 
             if($this->data['renameMatchTitle']) {
@@ -139,9 +130,52 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     }
 
 
-    public function renameOnSave(HookEvent $event) {
+    private function checkPageTemplateRestrictions($p) {
+        // escape if homepage
+        if($p->id == 1) return false;
+
+        // rename historically named exempt to the more meaningful specified
+        $specifiedPages = $this->data['exemptPages'];
+        $specifiedTemplates = $this->data['exemptTemplates'];
+
+        // only run these checks if page has a template already. This also covers it having a valid ID (ie not 0)
+        // this prevents this working when adding a new page, but works fine for editing/renaming an existing page
+        if($p->template) {
+            if($this->data['includeExclude'] == 'include') {
+                //escape if page is not specified
+                if(count($specifiedPages) !== 0 && !in_array($p->id, $specifiedPages)) return false;
+
+                //escape if template is specified
+                if(count($specifiedTemplates) !== 0 && !in_array($p->template->id, $specifiedTemplates)) return false;
+            }
+            else {
+                //escape if page is specified
+                if(count($specifiedPages) !== 0 && in_array($p->id, $specifiedPages)) return false;
+
+                //escape if template is not specified
+                if(count($specifiedTemplates) !== 0 && in_array($p->template->id, $specifiedTemplates)) return false;
+            }
+        }
+
+        // $p->id check is because it is not available for ProcessPageAdd
+        if($p->id && $p->template->flags & Template::flagSystem) return false; // exclude system templates eg. users etc
+
+        return true;
+    }
+
+
+    protected function renameOnSave(HookEvent $event) {
 
         $p = $event->arguments[0];
+
+        if(!$this->checkPageTemplateRestrictions($p)) return;
+
+        if(!$this->data['renameWithoutTitleChange'] && !$p->isChanged('title')) return;
+
+        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+            // if initial difference protected enabled, exit if initial name and name-ified title are different
+            if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
+        }
 
         $n = 0;
         $newName = $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate);
@@ -191,11 +225,28 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'enableForApi');
+        $f->label = __('Enable for API');
+        $f->description = __('If checked, this module will also control renaming of pages via the API.');
+        $f->columnWidth = 25;
+        $f->attr('checked', $data['enableForApi'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'renameMatchTitle');
         $f->label = __('Automatically rename the name field to match the title');
         $f->description = __('If checked, any changes to the title will result in the name being changed to match.');
-        $f->columnWidth = 50;
+        $f->columnWidth = 25;
         $f->attr('checked', $data['renameMatchTitle'] ? 'checked' : '' );
+        $wrapper->add($f);
+
+        $f = wire('modules')->get("InputfieldCheckbox");
+        $f->attr('name', 'renameWithoutTitleChange');
+        $f->label = __('Rename Without Title Change');
+        $f->columnWidth = 25;
+        $f->description = __('If checked, names that don\'t match titles will be updated even if the title is not manually changed.');
+        $f->notes = __('If checked, this will disable the "Initial Differences Protected" setting.');
+        $f->attr('checked', $data['renameWithoutTitleChange'] ? 'checked' : '' );
         $wrapper->add($f);
 
         $f = wire('modules')->get("InputfieldCheckbox");
@@ -203,7 +254,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->label = __('Only rename unpublished pages');
         $f->description = __('If checked, the name field will only be renamed to match the title when the page is unpublished.');
         $f->showIf = "renameMatchTitle=1";
-        $f->columnWidth = 50;
+        $f->columnWidth = 25;
         $f->attr('checked', $data['renameUnpublishedOnly'] ? 'checked' : '' );
         $wrapper->add($f);
 
@@ -250,6 +301,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f = wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'initialDifference');
         $f->label = __('Initial Differences Protected');
+        $f->showIf = "renameWithoutTitleChange!=1";
         $f->columnWidth = 33;
         $f->description = __('If checked, further changes to the name (to match a changing title) will not happen if the name was already different from the title (evaluated on page edit initial load).');
         $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
