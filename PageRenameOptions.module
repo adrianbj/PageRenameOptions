@@ -6,7 +6,7 @@
  *
  * Determine how pages are renamed when the title is changed
  *
- * ProcessWire 2.x
+ * ProcessWire 3.x
  * Copyright (C) 2011 by Ryan Cramer
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  *
@@ -23,7 +23,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => 33,
+            'version' => '1.0.0',
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -75,16 +75,17 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     public function ready() {
 
         // if not in admin (ie frontend call via API) and enableForApi is not checked, exit now
-        if(strpos($this->input->url, $this->config->urls->admin) !== 0 && !$this->data['enableForApi']) {
+        if(strpos($this->input->url, $this->wire('config')->urls->admin) !== 0 && !$this->data['enableForApi']) {
             return;
         }
         // in admin/backend
-        elseif(strpos($this->input->url, $this->config->urls->admin) === 0) {
-            // escape if not PageEdit or PageAdd
-            if(wire('page')->process != 'ProcessPageEdit' && wire('page')->process != 'ProcessPageAdd') return;
+        elseif(strpos($this->wire('input')->url, $this->wire('config')->urls->admin) === 0) {
+            // escape if not PageEdit, PageAdd, or PageClone
+            if($this->wire('page')->process != 'ProcessPageEdit' && $this->wire('page')->process != 'ProcessPageAdd' && $this->wire('page')->process != 'ProcessPageClone') return;
             // add hooks
             $this->addHookAfter("ProcessPageEdit::buildForm", $this, "addScripts");
             $this->addHookAfter("ProcessPageAdd::buildForm", $this, "addScripts");
+            $this->addHookAfter("ProcessPageClone::buildForm", $this, "addScripts");
         }
         // in frontend/api call
         else {
@@ -107,24 +108,24 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             $conf = $this->getModuleInfo();
             $version = (int) $conf['version'];
 
-            if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-                //ProcessPageEdit/Add check is to prevent disabling of name field when editing a user etc
-                if(($this->process == "ProcessPageEdit" || $this->process == "ProcessPageAdd") && $this->data['preventManualChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
-                if($this->data['initialDifference']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
+            if(!$this->wire('user')->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+                //ProcessPageEdit/Add/Clone check is to prevent disabling of name field when editing a user etc
+                if(($this->wire('process') == "ProcessPageEdit" || $this->wire('process') == "ProcessPageAdd" || $this->wire('process') == "ProcessPageClone") && $this->data['preventManualChanges']) $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "PreventManualChanges.js?v={$version}");
+                if($this->data['initialDifference']) $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "InitialDifferenceProtected.js?v={$version}");
             }
 
             if($this->data['renameWithoutTitleChange']) {
                 if(!$p->is(Page::statusUnpublished) && $this->data['renameUnpublishedOnly'] == 1) return;
-                wire("config")->scripts->add($this->config->urls->PageRenameOptions . "RenameWithoutTitleChange.js?v={$version}");
+                $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "RenameWithoutTitleChange.js?v={$version}");
             }
 
             if($this->data['renameMatchTitle']) {
                 if(!$p->is(Page::statusUnpublished) && $this->data['renameUnpublishedOnly'] == 1) return;
-                wire("config")->scripts->add($this->config->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
+                $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "PageRenameOptions.js?v={$version}");
             }
 
-            if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
-                if($this->data['liveChanges']) wire("config")->scripts->add($this->config->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
+            if(!$this->wire('user')->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+                if($this->data['liveChanges']) $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "LiveChangesProtected.js?v={$version}");
             }
         }
     }
@@ -172,7 +173,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
         if(!$this->data['renameWithoutTitleChange'] && !$p->isChanged('title')) return;
 
-        if(!$this->user->roles->has("name=".implode("|",$this->data['exemptRoles']))){
+        if(!$this->wire('user')->roles->has("name=".implode("|",$this->data['exemptRoles']))){
             // if initial difference protected enabled, exit if initial name and name-ified title are different
             if($this->data['initialDifference'] && $p->name != $this->wire('sanitizer')->pageName($p->title, Sanitizer::translate)) return;
         }
@@ -203,28 +204,28 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
      * @return InputfieldsWrapper
      *
      */
-    public static function getModuleConfigInputfields(array $data) {
+    public function getModuleConfigInputfields(array $data) {
 
         $data = array_merge(self::getDefaultData(), $data);
 
         $wrapper = new InputfieldWrapper();
 
-        $f = wire('modules')->get("InputfieldMarkup");
+        $f = $this->wire('modules')->get("InputfieldMarkup");
         $f->attr('name', 'warning');
         $f->label = __('WARNING');
         $f->value = "<h3>This module may break links to your site because changes to the page's name also change its URL!</h3>";
-        if(wire('modules')->isInstalled("PagePathHistory")){
+        if($this->wire('modules')->isInstalled("PagePathHistory")){
             $f->value .= "<h3 style='color:#009900'>Page Path History is installed, so you are protected from any future URL changes.</h3>";
         }
         else{
-            $f->value .= "<h3 style='color:#FF6600'>You should install <a href='".wire('config')->urls->admin."module/installConfirm?name=PagePathHistory'>Page Path History</a> (core module) to ensure any changed URLs are automatically redirected.</h3>";
+            $f->value .= "<h3 style='color:#FF6600'>You should install <a href='".$this->wire('config')->urls->admin."module/installConfirm?name=PagePathHistory'>Page Path History</a> (core module) to ensure any changed URLs are automatically redirected.</h3>";
         }
         $f->value .= "<br /><p><strong>Introduction</strong></p><p>With the 'Automatically rename the name field to match the title' option checked, the default behavior is to have the page name always match changes to the page title, but allow the user to manually edit if they want. The options allow you to protect initial differences (changes you may have made as a user with an exempt role), completely disable manual changes, or protect manual name changes from subsequent changes to the title while editing.</p>
         <p>My preferred settings are to set the exempt role as superuser, and check \"Initial Differences Protected\" and \"Prevent Manual Changes\". You may also want to consider unchecking 'Automatically rename the name field to match the title' once your site is live, and checking the 'Prevent Manual Changes' option, with an exception for the superuser role. This ensures links can't be changed by editors.</p>";
 
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'enableForApi');
         $f->label = __('Enable for API');
         $f->description = __('If checked, this module will also control renaming of pages via the API.');
@@ -232,7 +233,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['enableForApi'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'renameMatchTitle');
         $f->label = __('Automatically rename the name field to match the title');
         $f->description = __('If checked, any changes to the title will result in the name being changed to match.');
@@ -240,7 +241,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['renameMatchTitle'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'renameWithoutTitleChange');
         $f->label = __('Rename Without Title Change');
         $f->columnWidth = 25;
@@ -249,7 +250,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['renameWithoutTitleChange'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'renameUnpublishedOnly');
         $f->label = __('Only rename unpublished pages');
         $f->description = __('If checked, the name field will only be renamed to match the title when the page is unpublished.');
@@ -258,7 +259,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['renameUnpublishedOnly'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get('InputfieldRadios');
+        $f = $this->wire('modules')->get('InputfieldRadios');
         $f->attr('name+id', 'includeExclude');
         $f->label = __('Exclude or Include Specified Templates');
         $f->columnWidth = 33;
@@ -268,7 +269,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         if(isset($data['includeExclude'])) $f->value = $data['includeExclude'];
         $wrapper->add($f);
 
-        $f = wire('modules')->get('InputfieldAsmSelect');
+        $f = $this->wire('modules')->get('InputfieldAsmSelect');
         $f->attr('name+id', 'exemptTemplates'); //exempt is historical name kept for backward compatibility
         $f->label = __('Specified Templates');
         $f->columnWidth = 34;
@@ -276,11 +277,11 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->notes = __("These restrictions only affect editing/renaming existing pages, not when adding new ones.");
         $f->setAsmSelectOption('sortable', false);
         // populate with all available templates
-        foreach(wire('templates') as $t) $f->addOption($t->id,$t->name);
+        foreach($this->wire('templates') as $t) $f->addOption($t->id,$t->name);
         if(isset($data['exemptTemplates'])) $f->value = $data['exemptTemplates'];
         $wrapper->add($f);
 
-        $f = wire('modules')->get('InputfieldPageListSelectMultiple');
+        $f = $this->wire('modules')->get('InputfieldPageListSelectMultiple');
         $f->attr('name+id', 'exemptPages'); //exempt is historical name kept for backward compatibility
         $f->label = __('Specified Pages');
         $f->columnWidth = 33;
@@ -288,17 +289,17 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         if(isset($data['exemptPages'])) $f->value = $data['exemptPages'];
         $wrapper->add($f);
 
-        $f = wire('modules')->get('InputfieldAsmSelect');
+        $f = $this->wire('modules')->get('InputfieldAsmSelect');
         $f->attr('name+id', 'exemptRoles');
         $f->label = __('Roles exempt from rules below');
         $f->description = __("The selected roles will not be subject to any of the rules below.\nThe name will change automatically with the title (unless the 'Automatically rename the name field to match the title' is unchecked.), but they will be able to manually edit the page name as desired.");
         $f->setAsmSelectOption('sortable', false);
         // populate with all available templates
-        foreach(wire('roles') as $r) $f->addOption($r->name);
+        foreach($this->wire('roles') as $r) $f->addOption($r->name);
         if(isset($data['exemptRoles'])) $f->value = $data['exemptRoles'];
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'initialDifference');
         $f->label = __('Initial Differences Protected');
         $f->showIf = "renameWithoutTitleChange!=1";
@@ -307,7 +308,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['initialDifference'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'preventManualChanges');
         $f->label = __('Prevent Manual Changes');
         $f->columnWidth = 34;
@@ -316,7 +317,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         $f->attr('checked', $data['preventManualChanges'] ? 'checked' : '' );
         $wrapper->add($f);
 
-        $f = wire('modules')->get("InputfieldCheckbox");
+        $f = $this->wire('modules')->get("InputfieldCheckbox");
         $f->attr('name', 'liveChanges');
         $f->label = __('Live Changes Protected');
         $f->showIf = "preventManualChanges!=1";
