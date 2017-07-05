@@ -51,11 +51,7 @@ $(document).ready(function() {
         var re = new RegExp(replace);
         var id = $(this).attr('id').replace(re, $nameId);
         $nameField = $("#" + id);
-        var lastName = $nameField.val();
         if($nameField.size() > 0) $nameField.val(val).trigger('blur');
-        //in case new name field is empty, reset to last valid name
-        //this is important when title contains non-latin characters
-        if($nameField.val() == '') $nameField.val(lastName).trigger('blur');
     }
 
     // $titleField.keyup(titleKeyup);
