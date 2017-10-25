@@ -23,7 +23,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => '1.0.1',
+            'version' => '1.0.2',
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -75,7 +75,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     public function ready() {
 
         // if not in admin (ie frontend call via API) and enableForApi is not checked, exit now
-        if(strpos($this->input->url, $this->wire('config')->urls->admin) !== 0 && !$this->data['enableForApi']) {
+        if(strpos($this->wire('input')->url, $this->wire('config')->urls->admin) !== 0 && !$this->data['enableForApi']) {
             return;
         }
         // in admin/backend
@@ -135,7 +135,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
         // escape if homepage
         if($p->id == 1) return false;
 
-        // rename historically named exempt to the more meaningful specified
+        // rename historically named "exempt" to the more meaningful "specified"
         $specifiedPages = $this->data['exemptPages'];
         $specifiedTemplates = $this->data['exemptTemplates'];
 
@@ -158,8 +158,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             }
         }
 
-        // $p->id check is because it is not available for ProcessPageAdd
-        if($p->id && $p->template->flags & Template::flagSystem) return false; // exclude system templates eg. users etc
+        // $p->template check is because it is not available for ProcessPageAdd
+        if($p->template && $p->template->flags & Template::flagSystem) return false; // exclude system templates eg. users etc
 
         return true;
     }
