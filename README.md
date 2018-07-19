@@ -1,5 +1,4 @@
-PageRenameOptions
-================
+# PageRenameOptions
 
 Processwire module determining how pages are renamed when the title is changed
 
@@ -51,7 +50,7 @@ Please let me know if you have any further requirements around permissions / rol
 
 * If checked, further changes to the name (to match a changing title) will not happen if the name field was manually changed at any time during the current page edit.
 
-####Support forum:
+#### Support forum:
 https://processwire.com/talk/topic/7724-page-rename-options/
 
 
