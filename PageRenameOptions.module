@@ -23,7 +23,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => '1.0.3',
+            'version' => '1.0.4',
             'permanent' => false,
             'autoload' => true,
             'icon'     => 'pencil-square-o'
@@ -116,9 +116,13 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
 
             if($this->data['renameWithoutTitleChange']) {
                 if(!$p->is(Page::statusUnpublished) && $this->data['renameUnpublishedOnly'] == 1) return;
+                // if editing existing page (already has template) and title field is locked
+                // then we need to define a JS var with the title of the page so the renaming doesn't set to blank
                 if($p->template) {
-                    $fieldCollpased = $p->template->fieldgroup->getField('title', true)->collapsed;
-                    if($fieldCollpased == Inputfield::collapsedNoLocked || $fieldCollpased == Inputfield::collapsedYesLocked) return;
+                    $fieldCollapsed = $p->template->fieldgroup->getField('title', true)->collapsed;
+                    if($fieldCollapsed == Inputfield::collapsedNoLocked || $fieldCollapsed == Inputfield::collapsedYesLocked) {
+                        $this->wire('config')->js("pageRenameOptionsPageTitle", $p->title);
+                    }
                 }
                 $this->wire('config')->scripts->add($this->wire('config')->urls->PageRenameOptions . "RenameWithoutTitleChange.js?v={$version}");
             }

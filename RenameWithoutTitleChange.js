@@ -4,5 +4,8 @@ $(document).ready(function() {
     // check if namefield exists, because pages like homepage don't have one
     if(!$nameField.length) return;
 
-    if(typeof InputfieldPageName !== 'undefined') $nameField.val(InputfieldPageName.sanitize($(".InputfieldPageTitle input[type=text]").val())).trigger('blur');
+    if(typeof InputfieldPageName !== 'undefined') {
+        var pageTitle = ProcessWire.config.pageRenameOptionsPageTitle ? ProcessWire.config.pageRenameOptionsPageTitle : $(".InputfieldPageTitle input[type=text]").val();
+        $nameField.val(InputfieldPageName.sanitize(pageTitle)).trigger('blur');
+    }
 });
