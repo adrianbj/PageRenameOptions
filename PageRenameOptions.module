@@ -19,9 +19,8 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => '2.0.0',
-            'permanent' => false,
-            'autoload' => true,
+            'version' => '2.0.1',
+            'autoload' => "template=admin",
             'icon'     => 'pencil-square-o'
         );
     }
@@ -70,11 +69,6 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
     }
 
     public function ready() {
-
-        // exit if not in admin/backend
-        if(strpos($this->wire('input')->url, $this->wire('config')->urls->admin) !== 0) {
-            return;
-        }
 
         // exit if not PageEdit, PageAdd, or PageClone
         if($this->wire('page')->process != 'ProcessPageEdit' && $this->wire('page')->process != 'ProcessPageAdd' && $this->wire('page')->process != 'ProcessPageClone') {
