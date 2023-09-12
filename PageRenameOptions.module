@@ -6,7 +6,7 @@
  *
  * Determine how pages are renamed when the title is changed
  *
- * Copyright (C) 2019 by Adrian Jones
+ * Copyright (C) 2023 by Adrian Jones
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  *
  */
@@ -19,7 +19,7 @@ class PageRenameOptions extends WireData implements Module, ConfigurableModule {
             'author' => 'Adrian Jones',
             'summary' => 'Determine how pages are renamed when the title is changed',
             'href' => 'http://modules.processwire.com/modules/page-rename-options/',
-            'version' => '2.0.1',
+            'version' => '2.0.2',
             'autoload' => "template=admin",
             'icon'     => 'pencil-square-o'
         );

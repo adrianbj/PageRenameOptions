@@ -1,3 +1,4 @@
 $(document).ready(function() {
-    if(typeof InputfieldPageName !== 'undefined') initialTitleConverted = InputfieldPageName.sanitize($(".InputfieldPageTitle input[type=text]").val());
+    var $input = $(".InputfieldPageTitle input[type=text]");
+    if($input.length && typeof InputfieldPageName !== 'undefined') initialTitleConverted = InputfieldPageName.sanitize($input.val());
 });
