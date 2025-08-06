@@ -24,7 +24,7 @@ $(document).ready(function() {
         var $titleId = "Inputfield_title";
     }
 
-    $nameId = $nameField.selector.replace('#', '');
+    $nameId = $nameField[0].id;
 
     // check if namefield exists, because pages like homepage don't have one
     if(!$nameField.length) return;
@@ -54,7 +54,8 @@ $(document).ready(function() {
         if($nameField.size() > 0) $nameField.val(val).trigger('blur');
     }
 
-    // $titleField.keyup(titleKeyup);
-    if(pageAutoRename_active) $titleField.bind('keyup change', pageAutoRename_titleKeyup);
+    if (pageAutoRename_active) {
+        $titleField.on('keyup change', pageAutoRename_titleKeyup);
+    }
 
 });
