@@ -24,10 +24,11 @@ $(document).ready(function() {
         var $titleId = "Inputfield_title";
     }
 
-    $nameId = $nameField[0].id;
-
     // check if namefield exists, because pages like homepage don't have one
+    // also, links to edit certain fields only (eg page/edit/?id=1234&field=images) will result in no namefield
     if(!$nameField.length) return;
+
+    $nameId = $nameField[0].id;
 
     var $titleField = $(".InputfieldPageTitle input[type=text]");
     initialName = $('.InputfieldPageName input').val();
